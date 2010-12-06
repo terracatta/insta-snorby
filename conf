@@ -1,0 +1,158 @@
+#!/bin/bash -ex
+# Insta-Snorby (Snorby Appliance) - TKLPatch 
+# By Jason Meller (Terracatta) & Dustin Webber (Mephux) | Team Snorby & Lookycode
+# Last Updated - 12/02/2010
+
+#Declare all methods
+install()
+{
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get -y \
+        -o DPkg::Options::=--force-confdef \
+        -o DPkg::Options::=--force-confold \
+        install $@
+}
+
+cleanup_apt()
+    {
+        rm -r /var/cache/apt/*
+        mkdir /var/cache/apt/archives
+        mkdir /var/cache/apt/archives/partial
+    }
+
+
+#Set Hostname
+HOSTNAME="Insta-Snorby"
+echo "$HOSTNAME" > /etc/hostname
+sed -i "s|127.0.1.1 \(.*\)|127.0.1.1 $HOSTNAME $HOSTNAME.localdomain|" /etc/hosts
+hostname Insta-Snorby
+
+#Install all needed packages
+install gcc g++ build-essential libssl-dev libreadline5-dev zlib1g-dev linux-headers-generic libsqlite3-dev libxslt-dev libxml2-dev 
+
+
+# Install ruby 1.9.2
+wget http://ftp.ruby-lang.org//pub/ruby/1.9/ruby-1.9.2-p0.tar.gz
+tar -xvzf ruby-1.9.2-p0.tar.gz
+cd ruby-1.9.2-p0
+./configure
+make && make install
+
+#Install packages needed for gems
+install imagemagick git-core libmysqlclient-dev mysql-server libmagickwand-dev 
+
+gem install tzinfo builder memcache-client rack rack-test erubis mail text-format bundler thor i18n sqlite3-ruby
+gem install rack-mount --version=0.4.0
+gem install rails --version=3.0.2
+
+
+# Get the random binary that works to make PDFs
+wget http://dl.dropbox.com/u/38088/wkhtmltopdf
+cp wkhtmltopdf /usr/local/bin/wkhtmltopdf
+
+# Download Snorby
+mkdir -p /var/www/snorby
+
+adduser --system --home /var/www/snorby/ --no-create-home --group --shell /bin/bash snorby
+usermod -a -G snorby www-data
+
+git clone http://github.com/Snorby/snorby.git /var/www/snorby
+cp /root/database.yml /var/www/snorby/config/database.yml
+
+cd /var/www/snorby
+
+# Setup Snorby
+bundle install
+
+#Install packages for Snort
+install nmap nbtscan libpcap0.8-dev libpcre3-dev bison flex libpcap-ruby libdumbnet-dev apache2-mpm-prefork apache2-prefork-dev libapr1-dev libaprutil1-dev aspell libaspell-dev libapache2-mod-xsendfile jsvc openjdk-6-jre-headless apg
+
+#Install DAQ
+cd
+wget http://www.snort.org/dl/snort-current/daq-0.3.tar.gz
+tar zxvf daq-0.3.tar.gz
+cd daq-0.3
+./configure
+make && make install
+
+
+#Install Libdnet that actually works
+cd
+wget http://prdownloads.sourceforge.net/libdnet/libdnet-1.11.tar.gz?download
+tar zxvf libdnet-1.11.tar.gz?download
+cd libdnet-1.11
+./configure
+make && make install
+ln -s /usr/local/lib/libdnet.1 /usr/lib/
+ldconfig
+
+#Install Snort
+cd
+wget http://www.snort.org/dl/snort-current/snort-2.9.0.2.tar.gz
+tar zxvf snort-2.9.0.2.tar.gz
+cd snort-2.9.0.2
+./configure --with-mysql --enable-gre --enable-reload --enable-linux-smp-stats --enable-zlib
+make && make install
+mkdir /var/log/snort 
+groupadd snort
+useradd -g snort snort
+chown snort:snort /var/log/snort
+
+#Copy over configs
+mkdir /etc/snort
+cp etc/* /etc/snort/
+
+#Install Barnyard
+cd
+wget http://www.securixlive.com/download/barnyard2/barnyard2-1.8.tar.gz
+tar zxvf barnyard2-1.8.tar.gz
+cd barnyard2-1.8
+./configure --with-mysql
+make && make install
+cp etc/barnyard2.conf /etc/snort/
+mkdir /var/log/barnyard2
+chmod 666 /var/log/barnyard2
+touch  /var/log/snort/barnyard2.waldo
+chown snort:snort /var/log/snort/barnyard2.waldo
+
+#Download and install latest Emerging Threat Rules
+cd
+wget http://rules.emergingthreats.net/open-nogpl/snort-2.9.0/emerging.rules.tar.gz
+tar zxvf emerging.rules.tar.gz
+
+mkdir /etc/snort/rules
+cp /root/rules/* /etc/snort/rules/
+cp  /root/rules/sid-msg.map /etc/snort/sid-msg.map
+rm -rf /root/rules
+cp /root/snort.conf /etc/snort/snort.conf
+
+
+#Copy over configs
+cd
+cp /root/emerging.conf /etc/snort/rules/emerging.conf
+cp /root/barnyard2.conf /etc/snort/barnyard2.conf
+cp /root/snort.conf /etc/snort.conf
+
+
+# Install passenger and apache modules
+gem install --no-ri --no-rdoc --version 2.2.15 passenger
+/usr/local/lib/ruby/gems/1.9.1/gems/passenger-2.2.15/bin/passenger-install-apache2-module -a
+echo "LoadModule passenger_module /usr/local/lib/ruby/gems/1.9.1/gems/passenger-2.2.15/ext/apache2/mod_passenger.so" > /etc/apache2/mods-available/passenger.load
+echo "<IfModule mod_passenger.c>" > /etc/apache2/mods-available/passenger.conf
+echo "   PassengerRoot /usr/local/lib/ruby/gems/1.9.1/gems/passenger-2.2.15" >> /etc/apache2/mods-available/passenger.conf
+echo "   PassengerRuby /usr/local/bin/ruby" >> /etc/apache2/mods-available/passenger.conf
+echo "</IfModule>" >> /etc/apache2/mods-available/passenger.conf
+a2enmod passenger
+a2enmod rewrite
+a2enmod ssl
+
+#delete default site
+rm -rf /etc/apache2/sites-enabled/*
+a2ensite snorby
+a2ensite snorby-ssl
+#Kill uneeded inithooks
+rm /usr/lib/inithooks/firstboot.d/80tklbam
+
+#Stop services and cleanup
+cleanup_apt
+ 

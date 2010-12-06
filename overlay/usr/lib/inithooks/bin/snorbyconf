@@ -1,0 +1,4 @@
+#!/bin/bash -e
+# setup snorby
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+cd /var/www/snorby && /usr/local/bin/rake -f /var/www/snorby/Rakefile snorby:setup RAILS_ENV=production

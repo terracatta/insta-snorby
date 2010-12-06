@@ -1,0 +1,25 @@
+<IfModule mod_ssl.c> 
+<VirtualHost *:443> 
+DocumentRoot /var/www/snorby/public 
+SSLEngine on 
+SSLCertificateFile /etc/apache2/ssl/server.crt 
+SSLCertificateKeyFile /etc/apache2/ssl/server.key 
+BrowserMatch ".*MSIE.*" nokeepalive ssl-unclean-shutdown downgrade-1.0 force-response-1.0 
+
+LogLevel warn
+  #
+  # The following directives define some format nicknames for use with
+  # a CustomLog directive (see below).
+  #
+  LogFormat "%h %l %u %t \"%r\" %>s %b \"%{Referer}i\" \"%{User-Agent}i\"" combined
+  LogFormat "%h %l %u %t \"%r\" %>s %b" common
+  LogFormat "%{Referer}i -> %U" referer
+  LogFormat "%{User-agent}i" agent
+
+  CustomLog /var/www/snorby/log/snorby_access.log combined
+  TransferLog /var/www/snorby/log/snorby_access.log
+  ErrorLog /var/www/snorby/log/snorby_error.log
+
+</VirtualHost> 
+</IfModule>
+

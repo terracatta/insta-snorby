@@ -1,0 +1,21 @@
+<VirtualHost *:80> 
+  ServerName snorby.localdomain
+  DocumentRoot /var/www/snorby/public 
+
+
+  # Possible values include: debug, info, notice, warn, error, crit,
+  # alert, emerg.
+  LogLevel warn
+  #
+  # The following directives define some format nicknames for use with
+  # a CustomLog directive (see below).
+  #
+  LogFormat "%h %l %u %t \"%r\" %>s %b \"%{Referer}i\" \"%{User-Agent}i\"" combined
+  LogFormat "%h %l %u %t \"%r\" %>s %b" common
+  LogFormat "%{Referer}i -> %U" referer
+  LogFormat "%{User-agent}i" agent
+
+  CustomLog /var/www/snorby/log/snorby_access.log combined
+  TransferLog /var/www/snorby/log/snorby_access.log
+  ErrorLog /var/www/snorby/log/snorby_error.log
+</VirtualHost>

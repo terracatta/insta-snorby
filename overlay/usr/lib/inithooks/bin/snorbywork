@@ -1,0 +1,6 @@
+#!/bin/bash -e
+# setup snorby
+
+cd /var/www/snorby && /usr/local/bin/ruby script/delayed_job start
+
+
