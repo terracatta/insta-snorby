@@ -1,0 +1,7 @@
+#!/bin/bash -e
+# set interface to monitor
+. /etc/default/inithooks
+
+[ -e $INITHOOKS_CONF ] && . $INITHOOKS_CONF
+$INITHOOKS_PATH/bin/pulledpork.py
+

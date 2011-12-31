@@ -1,0 +1,20 @@
+development:
+  domain: localhost:3000
+  wkhtmltopdf: /usr/local/bin/wkhtmltopdf
+  mailer_sender: 'snorby@snorby.org'
+  rules: 
+    - "/etc/snort/rules"
+
+test:
+  domain: localhost:3000
+  wkhtmltopdf: /usr/local/bin/wkhtmltopdf
+  mailer_sender: 'snorby@snorby.org'
+
+# Change the production configuration 
+# for your environment.
+production:
+  domain: 'demo.snorby.org'
+  wkhtmltopdf: /usr/local/bin/wkhtmltopdf
+  mailer_sender: 'snorby@snorby.org'
+  rules:
+    - "/etc/snort/rules"

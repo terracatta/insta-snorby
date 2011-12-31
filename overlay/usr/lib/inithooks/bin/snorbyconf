@@ -1,4 +1,8 @@
 #!/bin/bash -e
 # setup snorby
 export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-cd /var/www/snorby && /usr/local/bin/rake -f /var/www/snorby/Rakefile snorby:setup RAILS_ENV=production
+cp /root/snorby_config.yml /var/www/snorby/config/snorby_config.yml
+cd /var/www/snorby && /usr/local/bin/bundle exec rake -f /var/www/snorby/Rakefile snorby:setup RAILS_ENV=production > /dev/null 2>&1
+cd /var/www/snorby && /usr/local/bin/bundle exec rake rails runner 'Setting.set(:email, "snorby@insta-snorby.localdomain")' > /dev/null 2>&1
+cd /var/www/snorby && /usr/local/bin/bundle exec rake  runner 'Setting.set(:autodrop, true)' > /dev/null 2>&1
+cd /var/www/snorby && /usr/local/bin/bundle exec rake  runner 'Setting.set(:autodrop_count, 500000)' > /dev/null 2>&1

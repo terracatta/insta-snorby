@@ -53,6 +53,9 @@ def main():
 	system('tar zxf /root/snortrules.tar.gz -C /root/')
 	system('cp /root/rules/* /etc/snort/rules/')
 	system('cp -f /root/snortvrt.conf /etc/snort/snort.conf')
+	system('cat /root/etc/sid-msg.map >> /etc/snort/sid-msg.map')
+	system("sed -i 's/<oinkcode>/%s/g' /root/vrtpulledpork.conf" % oinkcode[1])
+	system("cp /root/vrtpulledpork.conf /root/pulledpork-0.6.1/etc/pulledpork.conf")
 
 if __name__ == "__main__":
     main()
